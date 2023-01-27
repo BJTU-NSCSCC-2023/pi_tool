@@ -101,6 +101,9 @@ class Inst:
 	def __str__(self) -> str:
 		raise NotImplementedError()
 
+	def to_detailed(self) -> str:
+		raise NotImplementedError()
+
 	@staticmethod
 	def parse_reg(r: str):
 		r: str = r.strip()
@@ -202,6 +205,11 @@ class InstRType(Inst):
 			case _:
 				raise ValueError(f"Invalid base [{base}]")
 
+	def to_detailed(self) -> str:
+		return f"op={self.op:06b} rs={tblRegName2Id[self.rs]:05b} rt={tblRegName2Id[self.rt]:05b} " \
+			   f"rd={tblRegName2Id[self.rd]:05b} sh={self.shamt:05b} func={self.func:06b}"
+		pass
+
 
 class InstIType(Inst):
 	def __init__(self, instName: str, ctx: str):
@@ -256,6 +264,9 @@ class InstIType(Inst):
 			case _:
 				raise ValueError(f"Invalid base [{base}]")
 
+	def to_detailed(self) -> str:
+		return f"op={self.op:06b} rs={self.rs:05b} rt={self.rt:05b} imm={self.imm:016b}"
+
 
 class InstJType(Inst):
 	def __init__(self, instName: str, ctx: str):
@@ -285,6 +296,9 @@ class InstJType(Inst):
 			case _:
 				raise ValueError(f"Invalid base [{base}]")
 
+	def to_detailed(self) -> str:
+		return f"op={self.op:06b} addr={self.addr:026b}"
+
 
 argParser = argparse.ArgumentParser(
 	prog="mips-converter",
@@ -296,6 +310,7 @@ argParser.add_argument(
 	"--func", choices=["h2i", "i2h"], required=True,
 	help="'h2i': hex => instruction, 'i2h': instruction => hex"
 )
+argParser.add_argument("--verbose", action="store_true", default=False, dest="verbose", help="Verbose process.")
 
 
 def check_args(args):
@@ -306,14 +321,14 @@ def check_args(args):
 	dstFilePath.touch(exist_ok=True)
 	if not dstFilePath.is_file():
 		raise PermissionError("Can not create file.")
-	return srcFilePath, dstFilePath, args.func
+	return srcFilePath, dstFilePath, args.func, args.verbose
 
 
 def hex2inst(srcFilePath: Path, dstFilePath: Path):
 	raise NotImplementedError("TODO")
 
 
-def inst2hex(srcFilePath: Path, dstFilePath: Path):
+def inst2hex(srcFilePath: Path, dstFilePath: Path, verbose: bool):
 	fp = dstFilePath.open(mode="w")
 	instList: typ.List[str] = []
 	for line in srcFilePath.open().readlines():
@@ -321,7 +336,6 @@ def inst2hex(srcFilePath: Path, dstFilePath: Path):
 			inst = inst.strip().lower()
 			if len(inst) > 0:
 				instList.append(inst)
-	print(instList)
 	for inst in instList:
 		instName, instCtx = inst.split(" ", 1)
 		if instName not in tblInstInfo.keys():
@@ -330,21 +344,24 @@ def inst2hex(srcFilePath: Path, dstFilePath: Path):
 			case "R":
 				inst = InstRType(instName, ctx=instCtx)
 			case "I":
-				raise NotImplementedError()
+				inst = InstIType(instName, ctx=instCtx)
 			case "J":
-				raise NotImplementedError()
+				inst = InstJType(instName, ctx=instCtx)
+		if verbose:
+			print(f"[{str(inst):->30}] {inst.to_bits(16)}")
+			print(f"\t\t{inst.to_detailed()}")
 		fp.write(inst.to_bits(base=16) + "\n")
 	fp.close()
 
 
 def main():
 	args = argParser.parse_args(sys.argv[1:])
-	srcFilePath, dstFilePath, func = check_args(args)
+	srcFilePath, dstFilePath, func, verbose = check_args(args)
 	match func:
 		case "h2i":
 			hex2inst(srcFilePath, dstFilePath)
 		case "i2h":
-			inst2hex(srcFilePath, dstFilePath)
+			inst2hex(srcFilePath, dstFilePath, verbose)
 		case _:
 			raise Exception()
 
