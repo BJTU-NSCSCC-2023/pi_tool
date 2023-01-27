@@ -86,12 +86,12 @@ class Inst:
 				if tblInstInfo[instName][0] != "I":
 					raise LookupError(f"Instruction [{instName}] is not I-Type inst.")
 				self.name = instName
-				self.op = tblInstInfo[self.name][1][0]
+				self.op = tblInstInfo[self.name][1]
 			case "J":
 				if tblInstInfo[instName][0] != "J":
 					raise LookupError(f"Instruction [{instName}] is not J-Type inst.")
 				self.name = instName
-				self.op = tblInstInfo[self.name][1][0]
+				self.op = tblInstInfo[self.name][1]
 			case _:
 				raise ValueError(f"instType should be one of 'R', 'I' or 'J', but [{instType}] is found.")
 
@@ -127,9 +127,9 @@ class Inst:
 	def parse_imm(imm: str):
 		imm = imm.strip()
 		match imm[0:2]:
-			case ["0x" | "0X"]:
+			case "0x" | "0X":
 				return int(imm, 16)
-			case ["0b" | "0B"]:
+			case "0b" | "0B":
 				return int(imm, 2)
 			case _:
 				return int(imm, 10)
@@ -230,8 +230,8 @@ class InstIType(Inst):
 			imm = Inst.parse_imm(imm)
 		elif self.name in ["lb", "lbu", "lh", "lhu", "lw", "sb", "sh", "sw", "ll", "sc"]:
 			rt, imm_rs = ctx.split(",", 1)
-			imm, rs = ctx.split("(", 1)
-			rs, tmp = ctx.split(")", 1)
+			imm, imm_rs = imm_rs.split("(", 1)
+			rs, tmp = imm_rs.split(")", 1)
 			tmp: str
 			if len(tmp.strip()) != 0:
 				raise ValueError(f"[{imm_rs}] format error!")
@@ -265,7 +265,7 @@ class InstIType(Inst):
 				raise ValueError(f"Invalid base [{base}]")
 
 	def to_detailed(self) -> str:
-		return f"op={self.op:06b} rs={self.rs:05b} rt={self.rt:05b} imm={self.imm:016b}"
+		return f"op={self.op:06b} rs={tblRegName2Id[self.rs]:05b} rt={tblRegName2Id[self.rt]:05b} imm={self.imm:016b}"
 
 
 class InstJType(Inst):
