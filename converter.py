@@ -72,6 +72,29 @@ tblInstInfo: typ.Dict[str, typ.Tuple[str, int | typ.Tuple[int, int]]] = {
 
 
 class Inst:
+	def __init__(self, instName: str, instType: typ.Literal["R", "I", "J"]):
+		if instName not in tblInstInfo.keys():
+			raise LookupError(f"Invalid instruction name [{instName}].")
+		match instType:
+			case "R":
+				if tblInstInfo[instName][0] != "R":
+					raise LookupError(f"Instruction [{instName}] is not R-Type inst.")
+				self.name = instName
+				self.op = tblInstInfo[self.name][1][0]
+				self.func = tblInstInfo[self.name][1][1]
+			case "I":
+				if tblInstInfo[instName][0] != "I":
+					raise LookupError(f"Instruction [{instName}] is not I-Type inst.")
+				self.name = instName
+				self.op = tblInstInfo[self.name][1][0]
+			case "J":
+				if tblInstInfo[instName][0] != "J":
+					raise LookupError(f"Instruction [{instName}] is not J-Type inst.")
+				self.name = instName
+				self.op = tblInstInfo[self.name][1][0]
+			case _:
+				raise ValueError(f"instType should be one of 'R', 'I' or 'J', but [{instType}] is found.")
+
 	def to_bits(self, base: int = 2) -> str:
 		raise NotImplementedError()
 
@@ -111,17 +134,9 @@ class Inst:
 
 class InstRType(Inst):
 	def __init__(self, instName: str, ctx: str):
-		if instName not in tblInstInfo.keys():
-			raise LookupError(f"Invalid instruction name [{instName}].")
-		if tblInstInfo[instName][0] != "R":
-			raise LookupError(f"Instruction [{instName}] is not R-Type inst.")
-		self.name = instName
-		self.op = tblInstInfo[self.name][1][0]
-		self.func = tblInstInfo[self.name][1][1]
-
+		Inst.__init__(self, instName, "R")
 		if not isinstance(ctx, str):
 			raise ValueError(f"ctx should be str, not [{type(ctx)}]")
-
 		rs = "zero"
 		rt = "zero"
 		rd = "zero"
@@ -179,6 +194,89 @@ class InstRType(Inst):
 
 	def to_bits(self, base: int = 2) -> str:
 		binaryFormS = f"{self.op:06b}{tblRegName2Id[self.rs]:05b}{tblRegName2Id[self.rt]:05b}{tblRegName2Id[self.rd]:05b}{self.shamt:05b}{self.func:06b}"
+		match base:
+			case 2:
+				return binaryFormS
+			case 16:
+				return f"{int('0b' + binaryFormS, 2):08x}"
+			case _:
+				raise ValueError(f"Invalid base [{base}]")
+
+
+class InstIType(Inst):
+	def __init__(self, instName: str, ctx: str):
+		Inst.__init__(self, instName, "I")
+		if not isinstance(ctx, str):
+			raise ValueError(f"ctx should be str, not [{type(ctx)}]")
+		rs = "zero"
+		rt = "zero"
+		imm = 0
+		if self.name in ["addi", "addiu", "andi", "ori", "xori", "slti", "sltiu", "beq", "bne"]:
+			rt, rs, imm = ctx.split(",", 2)
+			rt = Inst.parse_reg(rt)
+			rs = Inst.parse_reg(rs)
+			imm = Inst.parse_imm(imm)
+		elif self.name in ["lui"]:
+			rt, imm = ctx.split(",", 1)
+			rt = Inst.parse_reg(rt)
+			imm = Inst.parse_imm(imm)
+		elif self.name in ["lb", "lbu", "lh", "lhu", "lw", "sb", "sh", "sw", "ll", "sc"]:
+			rt, imm_rs = ctx.split(",", 1)
+			imm, rs = ctx.split("(", 1)
+			rs, tmp = ctx.split(")", 1)
+			tmp: str
+			if len(tmp.strip()) != 0:
+				raise ValueError(f"[{imm_rs}] format error!")
+			rt = Inst.parse_reg(rt)
+			imm = Inst.parse_imm(imm)
+			rs = Inst.parse_reg(rs)
+		else:
+			raise LookupError()
+		self.rs = rs
+		self.rt = rt
+		self.imm = imm
+
+	def __str__(self):
+		if self.name in ["addi", "addiu", "andi", "ori", "xori", "slti", "sltiu", "beq", "bne"]:
+			return f"{self.name} ${self.rt}, ${self.rs}, ${hex(self.imm)}"
+		elif self.name in ["lui"]:
+			return f"{self.name} ${self.rt}, {hex(self.imm)}"
+		elif self.name in ["lb", "lbu", "lh", "lhu", "lw", "sb", "sh", "sw", "ll", "sc"]:
+			return f"{self.name} ${self.rt}, {hex(self.imm)}(${self.rs})"
+		else:
+			raise LookupError()
+
+	def to_bits(self, base: int = 2) -> str:
+		binaryFormS = f"{self.op:06b}{tblRegName2Id[self.rs]:05b}{tblRegName2Id[self.rt]:05b}{self.imm:016b}"
+		match base:
+			case 2:
+				return binaryFormS
+			case 16:
+				return f"{int('0b' + binaryFormS, 2):08x}"
+			case _:
+				raise ValueError(f"Invalid base [{base}]")
+
+
+class InstJType(Inst):
+	def __init__(self, instName: str, ctx: str):
+		Inst.__init__(self, instName, "J")
+		if not isinstance(ctx, str):
+			raise ValueError(f"ctx should be str, not [{type(ctx)}]")
+		addr = 0
+		if self.name in ["j", "jal"]:
+			addr = Inst.parse_imm(ctx)
+		else:
+			raise LookupError()
+		self.addr = addr
+
+	def __str__(self):
+		if self.name in ["j", "jal"]:
+			return f"{self.name} {hex(self.addr)}"
+		else:
+			raise LookupError()
+
+	def to_bits(self, base: int = 2) -> str:
+		binaryFormS = f"{self.op:06b}{self.addr:026b}"
 		match base:
 			case 2:
 				return binaryFormS
