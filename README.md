@@ -91,8 +91,10 @@ conda env update -n nscscc2023-bjtu-pyenv -f "${NSCSCC2023_BJTU_PI_TOOL_HOME}/ns
 详细使用请参考help：
 
 ```shell
-source ${NSCSCC2023_BJTU_PI_TOOL_HOME}/sh_lib/check_before_run.sh && bash -c "${py} mips-converter.py -h"
+source ${NSCSCC2023_BJTU_PI_TOOL_HOME}/sh_lib/check_before_run.sh && ${SHELL} -c "${py} mips-converter.py -h"
 ```
+
+由于`${py}`的内容特殊（有空格），所以需要使用这种特殊方式执行命令。
 
 
 
