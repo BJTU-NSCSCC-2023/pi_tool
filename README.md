@@ -5,7 +5,7 @@
 ## 获取仓库
 
 ```shell
-git clone 
+git clone git@github.com:BJTU-NSCSCC-2023/pi_tool.git
 ```
 
 
