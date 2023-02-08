@@ -102,5 +102,7 @@ source ${NSCSCC2023_BJTU_PI_TOOL_HOME}/sh_lib/check_before_run.sh && bash -c "${
 
 前面已经提到，为了统一环境，我们使用`conda`管理python环境。如果需要变更环境信息（比如使用了新的python库），请执行`export_env.sh`。
 
+> 理论上可以用`git`的hook来自动化这个过程，但是个人觉得这会让这个库的开发非常别扭，就没有这么做。如果你有成熟的想法请提pr、issue。
+
 如果需要更新本地的环境（比如本仓库的其他开发者变更了python环境，你这里需要更新到本地），请执行`upd_env.sh`。
 
