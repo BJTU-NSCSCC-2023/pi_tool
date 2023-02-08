@@ -98,6 +98,16 @@ source ${NSCSCC2023_BJTU_PI_TOOL_HOME}/sh_lib/check_before_run.sh && ${SHELL} -c
 
 
 
+# .template
+
+这里有一些模板，它们提供了使用本仓库的环境，你可以直接使用`cp`命令来使用这些模板。
+
+* `.sh`：
+
+  Shell脚本模板。
+
+
+
 # 其他
 
 ## 关于环境
