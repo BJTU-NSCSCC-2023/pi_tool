@@ -29,6 +29,7 @@ git clone git@github.com:BJTU-NSCSCC-2023/pi_tool.git
 * `conda`
 * `sbt`
 * `conan`
+* `wavedrom`
 
 在确定上述程序都存在后，执行：
 

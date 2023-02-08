@@ -38,6 +38,7 @@ function find_bin(){
 }
 find_bin sbt
 find_bin conan
+find_bin wavedrompy
 unset -f find_bin
 
 echo -e "${fin_c}Check all passed!${nc_c}"
